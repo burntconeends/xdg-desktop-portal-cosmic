@@ -1,6 +1,7 @@
 allow = Allow
 cancel = Cancel
 capture = Capture
+capture-on-release = Capture on release
 share = Share
 save-to = Save to
     .clipboard = { save-to } Clipboard

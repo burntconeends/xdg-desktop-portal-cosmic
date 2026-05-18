@@ -12,7 +12,7 @@ use cosmic::iced::core::{
 };
 use cosmic::iced::{self, window};
 use cosmic::widget::{
-    self, button, divider, dropdown, icon, image, layer_container, row, space, svg, text,
+    self, button, checkbox, divider, dropdown, icon, image, layer_container, row, space, svg, text,
 };
 use cosmic_bg_config::Source;
 use wayland_client::protocol::wl_output::WlOutput;
@@ -73,6 +73,8 @@ where
         save_locations: &'a Vec<String>,
         selected_save_location: usize,
         dropdown_selected: impl Fn(usize) -> Msg + 'static + Clone,
+        capture_selection_on_release: bool,
+        on_capture_selection_on_release_toggle: impl Fn(bool) -> Msg + 'static,
         spacing: Spacing,
         dnd_id: u128,
     ) -> Self {
@@ -201,6 +203,23 @@ where
         let active_icon = cosmic::theme::Svg::Custom(Rc::new(|t| svg::Style {
             color: Some(t.cosmic().accent_color().into()),
         }));
+        let capture_on_release_control: Element<'a, Msg> =
+            if matches!(choice, Choice::Rectangle(..)) {
+                checkbox(capture_selection_on_release)
+                    .label(fl!("capture-on-release"))
+                    .on_toggle(on_capture_selection_on_release_toggle)
+                    .into()
+            } else {
+                space::horizontal().width(Length::Fixed(0.0)).into()
+            };
+        let capture_on_release_divider: Element<'a, Msg> =
+            if matches!(choice, Choice::Rectangle(..)) {
+                divider::vertical::light()
+                    .height(Length::Fixed(64.0))
+                    .into()
+            } else {
+                space::horizontal().width(Length::Fixed(0.0)).into()
+            };
         Self {
             id: cosmic::widget::Id::unique(),
             choices: Vec::new(),
@@ -278,6 +297,8 @@ where
                             Some(on_capture)
                         }
                     ),
+                    capture_on_release_divider,
+                    capture_on_release_control,
                     divider::vertical::light().height(Length::Fixed(64.0)),
                     Element::from(dropdown(
                         save_locations.as_slice(),

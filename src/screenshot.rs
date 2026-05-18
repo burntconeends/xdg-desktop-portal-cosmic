@@ -384,6 +384,7 @@ pub enum Msg {
     OutputChanged(WlOutput),
     WindowChosen(String, usize),
     Location(usize),
+    CaptureSelectionOnReleaseToggled(bool),
 }
 
 #[derive(Debug, Clone)]
@@ -614,6 +615,8 @@ pub(crate) fn view(portal: &CosmicPortal, id: window::Id) -> cosmic::Element<'_,
             &portal.location_options,
             args.location as usize,
             Msg::Location,
+            args.capture_selection_on_release,
+            Msg::CaptureSelectionOnReleaseToggled,
             theme.spacing,
             i as u128,
         ),
@@ -899,6 +902,35 @@ pub fn update_msg(portal: &mut CosmicPortal, msg: Msg) -> cosmic::Task<crate::ap
                 ))
             } else {
                 log::error!("Failed to find screenshot Args for Location message.");
+                cosmic::Task::none()
+            }
+        }
+        Msg::CaptureSelectionOnReleaseToggled(enabled) => {
+            if let Some(args) = portal.screenshot_args.as_mut() {
+                args.capture_selection_on_release = enabled;
+                let last_rectangle = if let Choice::Rectangle(r, _) = &args.choice {
+                    Some(config::screenshot::Rect {
+                        left: r.left,
+                        top: r.top,
+                        right: r.right,
+                        bottom: r.bottom,
+                    })
+                } else {
+                    portal.config.screenshot.last_rectangle
+                };
+
+                cosmic::task::message(crate::app::Msg::ConfigSetScreenshot(
+                    config::screenshot::Screenshot {
+                        save_location: args.location,
+                        choice: (&args.choice).into(),
+                        last_rectangle,
+                        capture_selection_on_release: enabled,
+                    },
+                ))
+            } else {
+                log::error!(
+                    "Failed to find screenshot Args for CaptureSelectionOnReleaseToggled message."
+                );
                 cosmic::Task::none()
             }
         }
